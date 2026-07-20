@@ -62,7 +62,7 @@ class TionFlow:
                 else config[key]
             )
             result["description"] = {"suggested_value": value}
-        except TypeError, KeyError:
+        except (TypeError, KeyError):
             # TypeError -- config is not dict (have no climate in config, for example)
             # KeyError -- config have no key (have climate, but have no Tion)
             pass

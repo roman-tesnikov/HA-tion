@@ -4,39 +4,42 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.const import UnitOfTemperature
 import voluptuous as vol
-
 from homeassistant.components.climate import (
+    PLATFORM_SCHEMA,
     ClimateEntity,
     ClimateEntityFeature,
-    HVACMode,
     HVACAction,
+    HVACMode,
 )
-
-from homeassistant.helpers import config_validation as cv, entity_platform
+from homeassistant.components.climate.const import (
+    PRESET_AWAY,
+    PRESET_BOOST,
+    PRESET_NONE,
+    PRESET_SLEEP,
+)
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import (
+    ATTR_TEMPERATURE,
+    CONF_NAME,
+    PRECISION_WHOLE,
+    UnitOfTemperature,
+)
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import TionInstance
 from .const import (
-    ATTR_TEMPERATURE,
     CONF_AWAY_TEMP,
     CONF_INITIAL_HVAC_MODE,
     CONF_KEEP_ALIVE,
     CONF_MAC,
-    CONF_NAME,
     CONF_TARGET_TEMP,
     DEFAULT_NAME,
     DOMAIN,
-    PLATFORM_SCHEMA,
-    PRECISION_WHOLE,
-    PRESET_AWAY,
-    PRESET_BOOST,
-    PRESET_NONE,
-    PRESET_SLEEP,
 )
 
 _LOGGER = logging.getLogger(__name__)
