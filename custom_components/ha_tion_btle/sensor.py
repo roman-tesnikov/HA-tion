@@ -1,10 +1,16 @@
 """
 Sensors for Tion breezers
 """
+
 import logging
 from datetime import timedelta
 
-from homeassistant.components.sensor import SensorEntityDescription, SensorDeviceClass, SensorStateClass, SensorEntity
+from homeassistant.components.sensor import (
+    SensorEntityDescription,
+    SensorDeviceClass,
+    SensorStateClass,
+    SensorEntity,
+)
 from homeassistant.const import UnitOfTemperature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -43,7 +49,6 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-
     SensorEntityDescription(
         key="fan_speed",
         name="current fan speed",
@@ -62,16 +67,21 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
 )
 
 
-async def async_setup_platform(_hass: HomeAssistant, _config, _async_add_entities, _discovery_info=None):
+async def async_setup_platform(
+    _hass: HomeAssistant, _config, _async_add_entities, _discovery_info=None
+):
     _LOGGER.critical("Sensors configuration via configuration.yaml is not supported!")
     return False
 
 
-async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry, async_add_entities):
+async def async_setup_entry(
+    hass: HomeAssistant, config: ConfigEntry, async_add_entities
+):
     """Set up the sensor entry"""
     tion_instance = hass.data[DOMAIN][config.unique_id]
     entities: list[TionSensor] = [
-        TionSensor(description, tion_instance) for description in SENSOR_TYPES]
+        TionSensor(description, tion_instance) for description in SENSOR_TYPES
+    ]
     async_add_entities(entities)
 
     return True
@@ -107,7 +117,9 @@ class TionSensor(SensorEntity, CoordinatorEntity):
         return value
 
     def _handle_coordinator_update(self) -> None:
-        self._attr_assumed_state = False if self.coordinator.last_update_success else True
+        self._attr_assumed_state = (
+            False if self.coordinator.last_update_success else True
+        )
         self.async_write_ha_state()
 
     @property

@@ -1,6 +1,7 @@
 """
 Fan controls for Tion breezers
 """
+
 from __future__ import annotations
 
 import logging
@@ -9,7 +10,12 @@ from functools import cached_property
 from typing import Any
 
 from homeassistant.components.climate.const import PRESET_BOOST, PRESET_NONE
-from homeassistant.components.fan import FanEntityDescription, FanEntity, DIRECTION_FORWARD, FanEntityFeature
+from homeassistant.components.fan import (
+    FanEntityDescription,
+    FanEntity,
+    DIRECTION_FORWARD,
+    FanEntityFeature,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -33,7 +39,9 @@ config = FanEntityDescription(
 )
 
 
-async def async_setup_entry(hass: HomeAssistant, _config: ConfigEntry, async_add_entities):
+async def async_setup_entry(
+    hass: HomeAssistant, _config: ConfigEntry, async_add_entities
+):
     """Set up the sensor entry"""
 
     async_add_entities([TionFan(config, hass.data[DOMAIN][_config.unique_id], hass)])
@@ -72,24 +80,34 @@ class TionFan(FanEntity, CoordinatorEntity):
         pass
 
     def set_direction(self, direction: str) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
-    def turn_on(self, percentage: int | None = None, preset_mode: str | None = None, **kwargs) -> None:
-        raise NotImplemented
+    def turn_on(
+        self, percentage: int | None = None, preset_mode: str | None = None, **kwargs
+    ) -> None:
+        raise NotImplementedError
 
     def oscillate(self, oscillating: bool) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     def turn_off(self, **kwargs: Any) -> None:
         pass
 
     def set_percentage(self, percentage: int) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
-    def __init__(self, description: FanEntityDescription, instance: TionInstance, hass: HomeAssistant):
+    def __init__(
+        self,
+        description: FanEntityDescription,
+        instance: TionInstance,
+        hass: HomeAssistant,
+    ):
         """Initialize the fan."""
 
-        CoordinatorEntity.__init__(self=self, coordinator=instance, )
+        CoordinatorEntity.__init__(
+            self=self,
+            coordinator=instance,
+        )
         self.entity_description = description
         self._attr_name = f"{instance.name} {description.name}"
         self._attr_device_info = instance.device_info
@@ -105,13 +123,17 @@ class TionFan(FanEntity, CoordinatorEntity):
             platform=DOMAIN,
             unique_id=self.unique_id,
         )
-        _LOGGER.debug(f"{entity.entity_category=}, {entity.entity_id=}, {entity.options=} {entity.unique_id=}")
+        _LOGGER.debug(
+            f"{entity.entity_category=}, {entity.entity_id=}, {entity.options=} {entity.unique_id=}"
+        )
         if entity.entity_category == EntityCategory.CONFIG:
             import attr  # pylint: disable=import-outside-toplevel
 
             _LOGGER.debug(f"Updating {entity.entity_category=} for {entity.entity_id=}")
             new_value = {"entity_category": None}
-            registry.entities[entity.entity_id] = attr.evolve(registry.entities[entity.entity_id], **new_value)
+            registry.entities[entity.entity_id] = attr.evolve(
+                registry.entities[entity.entity_id], **new_value
+            )
             registry.async_schedule_save()
 
     def percent2mode(self, percentage: int) -> int:
@@ -119,8 +141,10 @@ class TionFan(FanEntity, CoordinatorEntity):
         try:
             return self._percent_mode_mapping[percentage]
         except KeyError:
-            _LOGGER.warning(f"Could not to convert {percentage} to mode with {self._percent_mode_mapping}. "
-                            f"Will use fall back method.")
+            _LOGGER.warning(
+                f"Could not to convert {percentage} to mode with {self._percent_mode_mapping}. "
+                f"Will use fall back method."
+            )
             for i in range(len(TionClimateEntity.attr_fan_modes())):
                 if percentage < self.percentage_step * i:
                     break
@@ -132,11 +156,17 @@ class TionFan(FanEntity, CoordinatorEntity):
             return result
 
     def mode2percent(self) -> int | None:
-        return self._mode_percent_mapping[self.fan_mode] if self.fan_mode is not None else None
+        return (
+            self._mode_percent_mapping[self.fan_mode]
+            if self.fan_mode is not None
+            else None
+        )
 
     async def async_set_percentage(self, percentage: int) -> None:
         """Set the speed of the fan, as a percentage."""
-        await self.coordinator.set(fan_speed=self.percent2mode(percentage), is_on=percentage > 0)
+        await self.coordinator.set(
+            fan_speed=self.percent2mode(percentage), is_on=percentage > 0
+        )
 
     @cached_property
     def boost_fan_mode(self) -> int:
@@ -159,7 +189,12 @@ class TionFan(FanEntity, CoordinatorEntity):
 
         self._attr_preset_mode = preset_mode
 
-    async def async_turn_on(self, percentage: int | None = None, preset_mode: str | None = None, **kwargs, ) -> None:
+    async def async_turn_on(
+        self,
+        percentage: int | None = None,
+        preset_mode: str | None = None,
+        **kwargs,
+    ) -> None:
         target_speed = 2 if self._saved_fan_mode is None else self._saved_fan_mode
         self._saved_fan_mode = None
         await self.coordinator.set(fan_speed=target_speed, is_on=True)
@@ -171,9 +206,13 @@ class TionFan(FanEntity, CoordinatorEntity):
         await self.coordinator.set(is_on=False)
 
     def _handle_coordinator_update(self) -> None:
-        self._attr_assumed_state = False if self.coordinator.last_update_success else True
+        self._attr_assumed_state = (
+            False if self.coordinator.last_update_success else True
+        )
         self._attr_is_on = self.coordinator.data.get("is_on")
-        self._attr_percentage = self.mode2percent() if self._attr_is_on else 0  # should check attr to avoid deadlock
+        self._attr_percentage = (
+            self.mode2percent() if self._attr_is_on else 0
+        )  # should check attr to avoid deadlock
         self.async_write_ha_state()
 
     @property
