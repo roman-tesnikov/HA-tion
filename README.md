@@ -3,7 +3,7 @@
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.6%2B-41BDF5?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
 [![Validate](https://github.com/roman-tesnikov/HA-tion/actions/workflows/validate.yml/badge.svg)](https://github.com/roman-tesnikov/HA-tion/actions/workflows/validate.yml)
 [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://www.hacs.xyz/)
-[![GitHub release](https://img.shields.io/github/v/release/roman-tesnikov/HA-tion)](https://github.com/roman-tesnikov/HA-tion/releases)
+[![GitHub tag](https://img.shields.io/github/v/tag/roman-tesnikov/HA-tion)](https://github.com/roman-tesnikov/HA-tion/tags)
 [![License](https://img.shields.io/github/license/roman-tesnikov/HA-tion)](LICENSE)
 
 Custom Bluetooth integration for Tion S3, S4, and Lite breezers. This fork of
@@ -45,7 +45,8 @@ This fork is installed as a
 2. Open the menu in the upper-right corner and select **Custom repositories**.
 3. Add `https://github.com/roman-tesnikov/HA-tion` and select **Integration** as
    the category.
-4. Find **Tion breezer** and download the latest release.
+4. Find **Tion breezer** and select **Download**. If HACS offers a version
+   selector, use the default branch unless a newer GitHub Release is available.
 5. Restart Home Assistant.
 
 ### Configuration via the user interface
@@ -74,8 +75,7 @@ preserved.
    `TionAPI/HA-tion` from the custom repository list.
 5. Add `https://github.com/roman-tesnikov/HA-tion` as a custom repository of
    type **Integration**.
-6. Find **Tion breezer**, download the latest release from this fork, and
-   restart Home Assistant.
+6. Find **Tion breezer**, select **Download**, and restart Home Assistant.
 7. Return to **Settings → Devices & services** and verify that the existing Tion
    devices and entities are available. No re-pairing or new config entry should
    be required.

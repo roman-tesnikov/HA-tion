@@ -19,6 +19,8 @@ def test_distribution_metadata_targets_the_fork() -> None:
     manifest = json.loads((COMPONENT / "manifest.json").read_text(encoding="utf-8"))
 
     assert hacs["homeassistant"] == "2026.6.0"
+    assert "zip_release" not in hacs
+    assert "filename" not in hacs
     assert manifest["documentation"] == FORK_URL
     assert manifest["issue_tracker"] == f"{FORK_URL}/issues"
     assert manifest["codeowners"] == ["@roman-tesnikov"]
