@@ -103,9 +103,16 @@ logger:
   default: warning
   logs:
     custom_components.ha_tion_btle: debug
-    tion_btle.tion: debug
-    tion_btle.s3: debug    
-    tion_btle.lite: debug
-    tion_btle.s4: debug
+    custom_components.ha_tion_btle.lib.tion_btle.tion: debug
+    custom_components.ha_tion_btle.lib.tion_btle.s3: debug
+    custom_components.ha_tion_btle.lib.tion_btle.lite: debug
+    custom_components.ha_tion_btle.lib.tion_btle.s4: debug
     custom_components.ha_tion_btle.config_flow: debug
 ```
+
+## Bundled library
+
+The integration contains a modified copy of
+[tion-btle 3.3.6](https://github.com/TionAPI/tion_python) under the GNU Lesser
+General Public License version 3. See `custom_components/ha_tion_btle/lib/tion_btle/LICENSE`
+and `NOTICE`.

@@ -7,7 +7,7 @@
     "fan"
   ],
   "requirements": [
-    "tion-btle==3.3.6"
+    "bleak-retry-connector==4.6.1"
   ],
   "codeowners": [
     "@IATkachenko"

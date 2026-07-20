@@ -1,0 +1,7 @@
+This directory contains a modified copy of tion-btle 3.3.6 from
+https://github.com/TionAPI/tion_python.
+
+The bundled library is distributed under the GNU Lesser General Public
+License version 3. The integration-level changes are documented in the
+repository history; unmodified model/protocol files retain their upstream
+license.

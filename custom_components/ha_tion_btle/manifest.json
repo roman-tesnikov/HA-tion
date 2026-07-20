@@ -7,11 +7,11 @@
     "fan"
   ],
   "requirements": [
-    "tion-btle==3.3.6"
+    "bleak-retry-connector==4.6.1"
   ],
   "codeowners": [
     "@IATkachenko"
   ],
   "config_flow": true,
-  "version": "v4.2.0"
+  "version": "v4.3.0"
 }
