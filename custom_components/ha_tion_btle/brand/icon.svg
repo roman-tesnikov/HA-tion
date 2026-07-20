@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Tion breezer">
+  <defs>
+    <linearGradient id="background" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#55C7F5"/>
+      <stop offset="1" stop-color="#168BCB"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="256" cy="256" r="236" fill="url(#background)"/>
+
+  <rect x="116" y="84" width="210" height="344" rx="34" fill="#FFFFFF"/>
+  <rect x="144" y="116" width="154" height="58" rx="24" fill="#155477"/>
+  <circle cx="270" cy="145" r="8" fill="#55C7F5"/>
+
+  <g fill="#155477">
+    <rect x="150" y="218" width="142" height="14" rx="7"/>
+    <rect x="150" y="252" width="142" height="14" rx="7"/>
+    <rect x="150" y="286" width="142" height="14" rx="7"/>
+    <rect x="150" y="320" width="142" height="14" rx="7"/>
+  </g>
+
+  <rect x="190" y="382" width="62" height="12" rx="6" fill="#55C7F5"/>
+
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-width="20">
+    <path d="M352 188c22-16 44-16 66 0"/>
+    <path d="M352 256c28-19 56-19 84 0"/>
+    <path d="M352 324c22-16 44-16 66 0"/>
+  </g>
+</svg>

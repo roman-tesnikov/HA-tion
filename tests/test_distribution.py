@@ -2,6 +2,7 @@
 
 import json
 import re
+import struct
 from pathlib import Path
 
 import yaml
@@ -21,6 +22,19 @@ def test_distribution_metadata_targets_the_fork() -> None:
     assert manifest["documentation"] == FORK_URL
     assert manifest["issue_tracker"] == f"{FORK_URL}/issues"
     assert manifest["codeowners"] == ["@roman-tesnikov"]
+
+
+def test_hacs_brand_icon_is_valid_rgba_png() -> None:
+    """HACS requires a local 512x512 brand icon with an alpha channel."""
+    data = (COMPONENT / "brand" / "icon.png").read_bytes()
+
+    assert data[:8] == b"\x89PNG\r\n\x1a\n"
+    assert data[12:16] == b"IHDR"
+
+    width, height = struct.unpack(">II", data[16:24])
+    assert (width, height) == (512, 512)
+    assert data[24] == 8
+    assert data[25] == 6
 
 
 def test_readme_yaml_examples_parse() -> None:
