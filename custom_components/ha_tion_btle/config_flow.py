@@ -165,8 +165,9 @@ class TionConfigFlow(TionFlow, config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 _LOGGER.debug("Going create entry with name %s" % input["name"])
                 _LOGGER.debug(input)
+                _tion: Tion | None = None
                 try:
-                    _tion: Tion = self.get_tion(input["model"], input["mac"])
+                    _tion = self.get_tion(input["model"], input["mac"])
                     result = await _tion.get()
                 except Exception as e:
                     _LOGGER.error(
@@ -174,6 +175,9 @@ class TionConfigFlow(TionFlow, config_entries.ConfigFlow, domain=DOMAIN):
                         % (result, str(e))
                     )
                     return self.async_show_form(step_id="add_failed")
+                finally:
+                    if _tion is not None:
+                        await _tion.disconnect()
 
                 return await self._create_entry(
                     title=input["name"], data=input, step="user"
@@ -187,9 +191,10 @@ class TionConfigFlow(TionFlow, config_entries.ConfigFlow, domain=DOMAIN):
         """Pair host and breezer"""
         _LOGGER.debug("Real pairing step")
         result = {}
+        _tion: Tion | None = None
         try:
             _LOGGER.debug(self._data)
-            _tion: Tion = self.get_tion(self._data["model"], self._data["mac"])
+            _tion = self.get_tion(self._data["model"], self._data["mac"])
             await _tion.pair()
             # We should sleep a bit, because immediately connection will cause device disconnected exception while
             # enabling notifications
@@ -205,6 +210,9 @@ class TionConfigFlow(TionFlow, config_entries.ConfigFlow, domain=DOMAIN):
                 str(e),
             )
             return self.async_show_form(step_id="pair_failed")
+        finally:
+            if _tion is not None:
+                await _tion.disconnect()
 
         return await self._create_entry(
             title=self._data["name"], data=self._data, step="pair"

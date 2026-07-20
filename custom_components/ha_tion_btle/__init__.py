@@ -95,10 +95,8 @@ class TionInstance(DataUpdateCoordinator):
         except KeyError:
             pass
 
-        # delay before next update if we got btle.BTLEDisconnectError
-        self._delay: int = 300
-
         self.__tion: Tion = self.get_tion(self.model, btle_device)
+        self._initial_refresh_pending = True
 
         mac_address = self.config[CONF_MAC]
         self.__tion.set_ble_device_callback(
@@ -108,7 +106,6 @@ class TionInstance(DataUpdateCoordinator):
         )
 
         self.__keep_alive = datetime.timedelta(seconds=self.__keep_alive)
-        self._delay = datetime.timedelta(seconds=self._delay)
         self.rssi: int = 0
 
         if self._config_entry.unique_id is None:
@@ -155,14 +152,23 @@ class TionInstance(DataUpdateCoordinator):
         response: dict[str, str | bool | int] = {}
 
         try:
-            response = await self.__tion.get()
-            self.update_interval = self.__keep_alive
+            # The first refresh establishes the long-lived connection. Later
+            # timer refreshes may reuse it, but must not reconnect it after an
+            # unplanned disconnect; only the next user command may do that.
+            response = await self.__tion.get(
+                connect_if_needed=self._initial_refresh_pending
+            )
+            self._initial_refresh_pending = False
+            self.update_interval = (
+                self.__keep_alive if self.__tion.is_connected else None
+            )
 
         except MaxTriesExceededError as e:
-            _LOGGER.warning("Got MaxTriesExceededError: %s. Will retry sooner.", str(e))
-            self.update_interval = self._delay
+            self.update_interval = None
+            _LOGGER.warning("Got MaxTriesExceededError: %s.", str(e))
             raise UpdateFailed("MaxTriesExceededError") from e
         except Exception as e:
+            self.update_interval = None
             _LOGGER.warning("Could not update Tion state: %s", e, exc_info=True)
             raise UpdateFailed(f"Could not update Tion state: {e}") from e
 
@@ -198,7 +204,12 @@ class TionInstance(DataUpdateCoordinator):
 
         args = ", ".join("%s=%r" % x for x in kwargs.items())
         _LOGGER.info("Need to set: " + args)
-        await self.__tion.set(kwargs)
+        try:
+            await self.__tion.set(kwargs)
+        finally:
+            self.update_interval = (
+                self.__keep_alive if self.__tion.is_connected else None
+            )
         self.data.update(original_args)
         self.async_update_listeners()
 

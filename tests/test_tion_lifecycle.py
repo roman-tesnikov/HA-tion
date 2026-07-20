@@ -25,8 +25,10 @@ class FakeClient:
         self._responses = iter(responses)
         self._notification_callback = None
         self._on_disconnect = on_disconnect
+        self.start_notify_calls = 0
 
     async def start_notify(self, _uuid, callback) -> None:
+        self.start_notify_calls += 1
         self._notification_callback = callback
 
     async def write_gatt_char(self, _uuid, _request, _response) -> None:
@@ -36,7 +38,7 @@ class FakeClient:
     async def disconnect(self) -> None:
         if self.is_connected:
             self.is_connected = False
-            self._on_disconnect()
+            self._on_disconnect(self)
 
     async def pair(self) -> None:
         return None
@@ -106,14 +108,14 @@ class TionDelegationTest(unittest.IsolatedAsyncioTestCase):
 
 
 class TionLifecycleTest(unittest.IsolatedAsyncioTestCase):
-    async def test_concurrent_reads_are_serialized_and_disconnect(self) -> None:
+    async def test_concurrent_reads_are_serialized_and_reuse_connection(self) -> None:
         tion = FakeTion()
         tion.set_ble_device_callback(lambda: object())
         active_clients = 0
         max_active_clients = 0
         clients: list[FakeClient] = []
 
-        def disconnected() -> None:
+        def disconnected(_client) -> None:
             nonlocal active_clients
             active_clients -= 1
 
@@ -121,7 +123,7 @@ class TionLifecycleTest(unittest.IsolatedAsyncioTestCase):
             nonlocal active_clients, max_active_clients
             active_clients += 1
             max_active_clients = max(max_active_clients, active_clients)
-            client = FakeClient([3], disconnected)
+            client = FakeClient([3, 4], disconnected)
             clients.append(client)
             return client
 
@@ -130,32 +132,75 @@ class TionLifecycleTest(unittest.IsolatedAsyncioTestCase):
         ):
             first, second = await asyncio.gather(tion.get(), tion.get())
 
-        self.assertEqual(first["fan_speed"], 3)
-        self.assertEqual(second["fan_speed"], 3)
+        self.assertIn(first["fan_speed"], (3, 4))
+        self.assertIn(second["fan_speed"], (3, 4))
+        self.assertEqual(len(clients), 1)
         self.assertEqual(max_active_clients, 1)
+        self.assertEqual(active_clients, 1)
+        self.assertTrue(clients[0].is_connected)
+
+        await tion.disconnect()
+
         self.assertEqual(active_clients, 0)
-        self.assertTrue(all(not client.is_connected for client in clients))
+        self.assertFalse(clients[0].is_connected)
 
     async def test_set_refreshes_state_before_encoding_full_packet(self) -> None:
         tion = FakeTion()
         tion.set_ble_device_callback(lambda: object())
-        client = FakeClient([4, 5], lambda: None)
+        client = FakeClient([4, 5, 6, 7], lambda _client: None)
+        establish_mock = AsyncMock(return_value=client)
 
         with patch(
             "tion_btle.tion.establish_connection",
-            new=AsyncMock(return_value=client),
+            new=establish_mock,
         ):
             await tion.set({"heater": "on"})
 
-        self.assertIsNotNone(tion.encoded_request)
-        self.assertEqual(tion.encoded_request["fan_speed"], 4)
-        self.assertEqual(tion.encoded_request["heater"], "on")
-        self.assertFalse(client.is_connected)
+            self.assertIsNotNone(tion.encoded_request)
+            self.assertEqual(tion.encoded_request["fan_speed"], 4)
+            self.assertEqual(tion.encoded_request["heater"], "on")
+
+            await tion.set({"fan_speed": 2})
+
+        self.assertEqual(establish_mock.await_count, 1)
+        self.assertEqual(client.start_notify_calls, 1)
+        self.assertEqual(tion.encoded_request["fan_speed"], 2)
+        self.assertTrue(client.is_connected)
+
+    async def test_poll_does_not_reconnect_after_disconnect(self) -> None:
+        tion = FakeTion()
+        tion.set_ble_device_callback(lambda: object())
+        clients: list[FakeClient] = []
+
+        async def establish(*_args, **kwargs):
+            client = FakeClient(
+                [4, 5] if not clients else [6, 7],
+                kwargs["disconnected_callback"],
+            )
+            clients.append(client)
+            return client
+
+        establish_mock = AsyncMock(side_effect=establish)
+        with patch("tion_btle.tion.establish_connection", new=establish_mock):
+            await tion.set({"heater": "on"})
+            await clients[0].disconnect()
+
+            cached = await tion.get(connect_if_needed=False)
+
+            self.assertEqual(establish_mock.await_count, 1)
+            self.assertEqual(cached["fan_speed"], 4)
+            self.assertFalse(tion.is_connected)
+
+            await tion.set({"heater": "off"})
+
+        self.assertEqual(establish_mock.await_count, 2)
+        self.assertEqual(len(clients), 2)
+        self.assertTrue(tion.is_connected)
 
     async def test_pair_releases_connection(self) -> None:
         tion = FakeTion()
         tion.set_ble_device_callback(lambda: object())
-        client = FakeClient([], lambda: None)
+        client = FakeClient([], lambda _client: None)
 
         with patch(
             "tion_btle.tion.establish_connection",
@@ -170,7 +215,7 @@ class TionLifecycleTest(unittest.IsolatedAsyncioTestCase):
             with self.subTest(model=tion_class.__name__):
                 tion = tion_class("AA:BB:CC:DD:EE:FF")
                 tion.set_ble_device_callback(lambda: object())
-                client = PacketClient(tion._packages, lambda: None)
+                client = PacketClient(tion._packages, lambda _client: None)
 
                 with patch(
                     "tion_btle.tion.establish_connection",
@@ -181,6 +226,8 @@ class TionLifecycleTest(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(
                     result["model"], tion_class.__name__.removeprefix("Tion")
                 )
+                self.assertTrue(client.is_connected)
+                await tion.disconnect()
                 self.assertFalse(client.is_connected)
 
 

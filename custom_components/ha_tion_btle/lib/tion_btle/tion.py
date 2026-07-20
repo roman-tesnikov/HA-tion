@@ -236,14 +236,29 @@ class Tion:
         return "off"
 
     @final
-    async def get_state_from_breezer(self) -> None:
-        """Read and decode current state in one serialized BLE transaction."""
+    async def get_state_from_breezer(self, *, connect_if_needed: bool = True) -> bool:
+        """Read and decode current state in one serialized BLE transaction.
+
+        A scheduled state refresh must not resurrect a connection that the
+        breezer or Bluetooth stack has dropped. In that case the next user
+        command is responsible for reconnecting.
+        """
         async with self._operation_lock:
             try:
-                await self._connect()
+                if not await self._connect(allow_reconnect=connect_if_needed):
+                    _LOGGER.debug(
+                        "Skipping state request for disconnected breezer %s",
+                        self.mac,
+                    )
+                    return False
                 await self._request_state()
-            finally:
+            except Exception:
+                # A failed request may leave a GATT connection or notification
+                # subscription in an indeterminate state. Drop it, but never
+                # reconnect here; a later user command will create a new client.
                 await self.reset_connection()
+                raise
+            return True
 
     async def _request_state(self) -> None:
         """Request and decode state using an already connected client."""
@@ -253,10 +268,13 @@ class Tion:
         self._decode_response(response)
 
     @final
-    async def get(self, skip_update: bool = False) -> dict:
+    async def get(
+        self, skip_update: bool = False, *, connect_if_needed: bool = True
+    ) -> dict:
         """
         Report current breezer state
         :param skip_update: may we skip requesting data from breezer or not
+        :param connect_if_needed: whether this read may establish a BLE connection
         :return:
           dictionary with device state
         """
@@ -267,7 +285,7 @@ class Tion:
                 self.have_breezer_state,
             )
         else:
-            await self.get_state_from_breezer()
+            await self.get_state_from_breezer(connect_if_needed=connect_if_needed)
         common = self.__generate_common_json()
         model_specific_data = self._generate_model_specific_json()
 
@@ -290,7 +308,7 @@ class Tion:
 
     @final
     async def set(self, new_settings=None) -> None:
-        """Set state using a fresh read and one serialized BLE transaction."""
+        """Set state and keep the BLE connection for later commands."""
         new_settings = dict(new_settings or {})
 
         try:
@@ -317,8 +335,11 @@ class Tion:
                 await self._send_request(encoded_request)
                 await self._get_data_from_breezer()
                 self._set_internal_state_from_request(new_settings)
-            finally:
+            except Exception:
+                # Do not keep a possibly broken client. There is deliberately
+                # no background reconnect: the next set() call will reconnect.
                 await self.reset_connection()
+                raise
 
     @final
     @property
@@ -347,11 +368,13 @@ class Tion:
     @final
     @property
     def connection_status(self):
-        if self._client is not None:
-            status = "connected" if self._client.is_connected else "disc"
-        else:
-            status = "disc"
-        return status
+        return "connected" if self.is_connected else "disc"
+
+    @final
+    @property
+    def is_connected(self) -> bool:
+        """Return whether the current BLE client is still connected."""
+        return self._client is not None and self._client.is_connected
 
     def _disconnected_callback(self, client: BleakClient) -> None:
         """Reset state after a planned or unplanned disconnect."""
@@ -410,14 +433,24 @@ class Tion:
         return client
 
     @final
-    async def _connect(self, need_notifications: bool = True):
-        """Connect to the breezer using HA-managed BLE connection."""
+    async def _connect(
+        self, need_notifications: bool = True, *, allow_reconnect: bool = True
+    ) -> bool:
+        """Prepare a BLE connection and return whether it is available.
+
+        ``allow_reconnect=False`` is used by scheduled polling. It may reuse
+        an existing client, but it must not establish a new connection.
+        """
         _LOGGER.debug("Connecting; status=%s", self.connection_status)
         async with self._connect_lock:
             if self.connection_status != "disc":
                 if need_notifications and not self.__notifications_enabled:
                     await self._enable_notifications()
-                return
+                return True
+
+            if not allow_reconnect:
+                _LOGGER.debug("BLE reconnect suppressed for %s", self.mac)
+                return False
 
             try:
                 await self._ensure_client()
@@ -430,6 +463,7 @@ class Tion:
             else:
                 _LOGGER.debug("Notifications were not requested")
         _LOGGER.debug("Connection ready; status=%s", self.connection_status)
+        return True
 
     @final
     async def _disconnect(self):
