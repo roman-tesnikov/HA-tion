@@ -33,10 +33,6 @@ jobs:
           else
             python -m pip install "homeassistant==${{ matrix.homeassistant }}"
           fi
-      - name: Install Home Assistant integration dependencies
-        run: |
-          python scripts/homeassistant_requirements.py custom_components/ha_tion_btle/manifest.json > "$RUNNER_TEMP/homeassistant-integration-requirements.txt"
-          python -m pip install -r "$RUNNER_TEMP/homeassistant-integration-requirements.txt"
       - name: Lint
         run: ruff check .
       - name: Check formatting
