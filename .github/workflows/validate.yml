@@ -33,10 +33,10 @@ jobs:
           else
             python -m pip install "homeassistant==${{ matrix.homeassistant }}"
           fi
-      - name: Align Bluetooth dependencies with Home Assistant
+      - name: Install Home Assistant integration dependencies
         run: |
-          python -c 'import json; from pathlib import Path; import homeassistant; path = Path(homeassistant.__file__).parent / "components" / "bluetooth" / "manifest.json"; print("\n".join(json.loads(path.read_text())["requirements"]))' > "$RUNNER_TEMP/homeassistant-bluetooth-requirements.txt"
-          python -m pip install -r "$RUNNER_TEMP/homeassistant-bluetooth-requirements.txt"
+          python scripts/homeassistant_requirements.py custom_components/ha_tion_btle/manifest.json > "$RUNNER_TEMP/homeassistant-integration-requirements.txt"
+          python -m pip install -r "$RUNNER_TEMP/homeassistant-integration-requirements.txt"
       - name: Lint
         run: ruff check .
       - name: Check formatting
