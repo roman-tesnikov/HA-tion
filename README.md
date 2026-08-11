@@ -31,8 +31,8 @@ If you control the breezer through MagicAir instead of Bluetooth, see
 - a Home Assistant host with a working Bluetooth adapter or Bluetooth proxy;
 - Tion S3, S4, or Lite breezer.
 
-CI currently checks Home Assistant `2026.6.0` and `2026.7.2`. HACS installation
-is recommended.
+CI checks Home Assistant `2026.6.0`, `2026.8.0`, and the latest stable release.
+HACS installation is recommended.
 
 ## Installation and configuration
 

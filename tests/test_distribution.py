@@ -26,6 +26,14 @@ def test_distribution_metadata_targets_the_fork() -> None:
     assert manifest["codeowners"] == ["@roman-tesnikov"]
 
 
+def test_bluetooth_runtime_dependencies_are_owned_by_home_assistant() -> None:
+    """Do not pin packages already provided by Home Assistant Bluetooth."""
+    for filename in ("manifest.json", "manifest.json.tpl"):
+        manifest = json.loads((COMPONENT / filename).read_text(encoding="utf-8"))
+        assert "bluetooth" in manifest["dependencies"], filename
+        assert manifest.get("requirements", []) == [], filename
+
+
 def test_hacs_brand_icon_is_valid_rgba_png() -> None:
     """HACS requires a local 512x512 brand icon with an alpha channel."""
     data = (COMPONENT / "brand" / "icon.png").read_bytes()

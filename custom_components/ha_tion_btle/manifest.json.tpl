@@ -7,9 +7,6 @@
     "bluetooth",
     "fan"
   ],
-  "requirements": [
-    "bleak-retry-connector==4.6.1"
-  ],
   "codeowners": [
     "@roman-tesnikov"
   ],

@@ -7,12 +7,9 @@
     "bluetooth",
     "fan"
   ],
-  "requirements": [
-    "bleak-retry-connector==4.6.1"
-  ],
   "codeowners": [
     "@roman-tesnikov"
   ],
   "config_flow": true,
-  "version": "v4.4.0"
+  "version": "v4.4.1"
 }
